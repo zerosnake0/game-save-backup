@@ -24,3 +24,22 @@ body {
     height: 100vh;
     text-align: center;
 }
+
+.square {
+	height: 100px;
+	width: 100px;
+}
+
+button {
+	height: 40px;
+	width: 80px;
+}
+
+button.small{
+	height: unset;
+	width: unset;
+}
+
+.err {
+	color:crimson;
+}
