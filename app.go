@@ -212,6 +212,25 @@ func (a *App) Backup(name string) (res any, err error) {
 	return a.backup(name, false)
 }
 
+func commonPrefix(arr []string) string {
+	if len(arr) == 0 {
+		return ""
+	}
+	if len(arr) == 1 {
+		return filepath.Dir(arr[0])
+	}
+	ret := arr[0]
+	for _, v := range arr[1:] {
+		for len(ret) > 0 {
+			if strings.HasPrefix(v, ret) {
+				break
+			}
+			ret = filepath.Dir(ret)
+		}
+	}
+	return ret
+}
+
 func (a *App) backup(name string, auto bool) (res any, err error) {
 	if name == "" {
 		return res, stderr.New("empty name")
@@ -251,18 +270,20 @@ func (a *App) backup(name string, auto bool) (res any, err error) {
 	}
 
 	sorted := map2slice(realFiles)
+	prefix := commonPrefix(sorted)
+	fmt.Println("prefix:", prefix)
 
 	hash := md5.New()
 	buf := bytes.NewBuffer(nil)
 	zw := zip.NewWriter(buf)
 	for _, file := range sorted {
-		nameInZip := filepath.ToSlash(file)
+		nameInZip := filepath.ToSlash(strings.TrimPrefix(file, prefix))
+		nameInZip = strings.ReplaceAll(nameInZip, ":", "")
+		nameInZip = strings.Trim(nameInZip, "/")
 		if len(nameInZip) == 0 {
 			return res, stderr.New("empty file name in zip")
 		}
-		if nameInZip[0] != '/' {
-			nameInZip = "/" + strings.ReplaceAll(nameInZip, ":", "")
-		}
+		fmt.Println(nameInZip)
 		w, err := zw.CreateHeader(&zip.FileHeader{
 			Name:    nameInZip,
 			Comment: file,
