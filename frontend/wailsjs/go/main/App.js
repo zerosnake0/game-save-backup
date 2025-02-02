@@ -14,6 +14,10 @@ export function Backup(arg1) {
   return window['go']['main']['App']['Backup'](arg1);
 }
 
+export function Backups(arg1) {
+  return window['go']['main']['App']['Backups'](arg1);
+}
+
 export function ChooseDir() {
   return window['go']['main']['App']['ChooseDir']();
 }
@@ -40,6 +44,14 @@ export function Remove(arg1) {
 
 export function RemoveFile(arg1, arg2) {
   return window['go']['main']['App']['RemoveFile'](arg1, arg2);
+}
+
+export function RemoveOne(arg1, arg2) {
+  return window['go']['main']['App']['RemoveOne'](arg1, arg2);
+}
+
+export function Restore(arg1, arg2) {
+  return window['go']['main']['App']['Restore'](arg1, arg2);
 }
 
 export function Root() {

@@ -4,6 +4,7 @@ import {
   Add,
   AddFiles,
   Backup,
+  Backups,
   ChooseDir,
   ChooseFiles,
   Files,
@@ -11,6 +12,8 @@ import {
   Open,
   Remove,
   RemoveFile,
+  RemoveOne,
+  Restore,
   Root,
 } from "../wailsjs/go/main/App";
 import React, { useEffect, useState } from "react";
@@ -51,7 +54,7 @@ const ListContainer = (props: ListContainerProps) => {
                 setRefresh(!refresh);
               })
               .catch((e) => {
-                setErr(e);
+                setErr(`Add: ${e}`);
               });
           }}
         >
@@ -60,7 +63,7 @@ const ListContainer = (props: ListContainerProps) => {
         <button
           onClick={() => {
             Open("").catch((e) => {
-              setErr(e);
+              setErr(`Open: ${e}`);
             });
           }}
         >
@@ -114,6 +117,22 @@ const SingleContainer = (props: SingleContainerProps) => {
     });
   }, [refreshFiles]);
 
+  const [saves, setSaves] = useState<Array<string>>([]);
+  const [refreshSaves, setRefreshSaves] = useState(false);
+
+  useEffect(() => {
+    Backups(ctx.Current)
+      .then((val) => {
+        if (val) {
+          val = val.reverse();
+        }
+        setSaves(val);
+      })
+      .catch((e) => {
+        setErr2(`Backups: ${e}`);
+      });
+  }, [refreshSaves]);
+
   const render = () => {
     if (removing) {
       return (
@@ -131,7 +150,7 @@ const SingleContainer = (props: SingleContainerProps) => {
                     });
                   })
                   .catch((e) => {
-                    setErr(e);
+                    setErr(`Remove: ${e}`);
                   });
               }
             }}
@@ -161,7 +180,7 @@ const SingleContainer = (props: SingleContainerProps) => {
       <button
         onClick={() => {
           Open(ctx.Current).catch((e) => {
-            setErr(e);
+            setErr(`Open ${ctx.Current}: ${e}`);
           });
         }}
       >
@@ -186,7 +205,7 @@ const SingleContainer = (props: SingleContainerProps) => {
                         setRefreshFiles(!refreshFiles);
                       })
                       .catch((e) => {
-                        setErr2(e);
+                        setErr2(`RemoveFile ${v}: ${e}`);
                       });
                   }}
                 >
@@ -204,7 +223,7 @@ const SingleContainer = (props: SingleContainerProps) => {
                   setRefreshFiles(!refreshFiles);
                 })
                 .catch((e) => {
-                  setErr2(e);
+                  setErr2(`AddFiles: ${e}`);
                 });
             });
           }}
@@ -220,7 +239,7 @@ const SingleContainer = (props: SingleContainerProps) => {
                   setRefreshFiles(!refreshFiles);
                 })
                 .catch((e) => {
-                  setErr2(e);
+                  setErr2(`AddFiles: ${e}`);
                 });
             });
           }}
@@ -233,13 +252,50 @@ const SingleContainer = (props: SingleContainerProps) => {
       <div>
         <button
           onClick={() => {
-            Backup(ctx.Current).then((val) => {
-              console.log(val);
-            });
+            Backup(ctx.Current)
+              .then((val) => {
+                setRefreshSaves(!refreshSaves);
+              })
+              .catch((e) => {
+                setErr2(`Backup: ${e}`);
+              });
           }}
         >
           Backup
         </button>
+        {saves &&
+          saves.map((v, idx) => {
+            return (
+              <div key={idx}>
+                <button
+                  onClick={() => {
+                    Restore(ctx.Current, v)
+                      .then(() => {
+                        setRefreshSaves(!refreshSaves);
+                      })
+                      .catch((e) => {
+                        setErr2(`Restore: ${e}`);
+                      });
+                  }}
+                >
+                  {v}
+                </button>
+                <button
+                  onClick={() => {
+                    RemoveOne(ctx.Current, v)
+                      .then(() => {
+                        setRefreshSaves(!refreshSaves);
+                      })
+                      .catch((e) => {
+                        setErr2(`RemoveOne: ${e}`);
+                      });
+                  }}
+                >
+                  x
+                </button>
+              </div>
+            );
+          })}
       </div>
     </div>
   );

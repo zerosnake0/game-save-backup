@@ -5,7 +5,9 @@ export function Add(arg1:string):Promise<void>;
 
 export function AddFiles(arg1:string,arg2:Array<string>):Promise<void>;
 
-export function Backup(arg1:string):Promise<{[key: string]: boolean}>;
+export function Backup(arg1:string):Promise<any>;
+
+export function Backups(arg1:string):Promise<Array<string>>;
 
 export function ChooseDir():Promise<string>;
 
@@ -20,5 +22,9 @@ export function Open(arg1:string):Promise<void>;
 export function Remove(arg1:string):Promise<void>;
 
 export function RemoveFile(arg1:string,arg2:string):Promise<void>;
+
+export function RemoveOne(arg1:string,arg2:string):Promise<void>;
+
+export function Restore(arg1:string,arg2:string):Promise<void>;
 
 export function Root():Promise<string>;

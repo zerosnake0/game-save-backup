@@ -25,14 +25,13 @@ body {
     text-align: center;
 }
 
-.square {
-	height: 100px;
-	width: 100px;
+button {
+	padding: 10px;
 }
 
-button {
-	height: 40px;
-	width: 80px;
+button.square {
+	height: 100px;
+	width: 100px;
 }
 
 button.small{

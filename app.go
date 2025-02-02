@@ -1,10 +1,14 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	stderr "errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -12,6 +16,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	wailsRT "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -77,11 +82,15 @@ func (a *App) Add(name string) error {
 }
 
 func (a *App) Remove(name string) error {
+	if name == "" {
+		return stderr.New("empty name")
+	}
 	subDir := filepath.Join(root, name)
 	return os.RemoveAll(subDir)
 }
 
 func (a *App) Open(name string) error {
+	// name可以空
 	subDir := filepath.Join(root, name)
 	cmd := "open"
 	if runtime.GOOS == "windows" {
@@ -91,6 +100,10 @@ func (a *App) Open(name string) error {
 }
 
 func (a *App) Files(name string) ([]string, error) {
+	if name == "" {
+		return nil, stderr.New("empty name")
+	}
+
 	configFile := filepath.Join(root, name, "config")
 	b, err := os.ReadFile(configFile)
 	if err != nil {
@@ -118,17 +131,28 @@ func (a *App) ChooseDir() (string, error) {
 	return wailsRT.OpenDirectoryDialog(a.ctx, wailsRT.OpenDialogOptions{})
 }
 
-func (a *App) saveFiles(name string, files map[string]bool) error {
-	arr := make([]string, 0, len(files))
-	for file := range files {
-		arr = append(arr, file)
+func map2slice(m map[string]bool) []string {
+	ret := make([]string, 0, len(m))
+	for k := range m {
+		ret = append(ret, k)
 	}
-	sort.Strings(arr)
+	sort.Strings(ret)
+	return ret
+}
+
+func (a *App) saveFiles(name string, files map[string]bool) error {
+	arr := map2slice(files)
 	configFile := filepath.Join(root, name, "config")
 	return os.WriteFile(configFile, []byte(strings.Join(arr, "\n")), 0644)
 }
 
 func (a *App) AddFiles(name string, files []string) error {
+	if name == "" {
+		return stderr.New("empty name")
+	}
+	if len(files) == 0 {
+		return nil
+	}
 	current, err := a.Files(name)
 	if err != nil {
 		return err
@@ -144,6 +168,12 @@ func (a *App) AddFiles(name string, files []string) error {
 }
 
 func (a *App) RemoveFile(name, file string) error {
+	if name == "" {
+		return stderr.New("empty name")
+	}
+	if file == "" {
+		return stderr.New("empty filename")
+	}
 	current, err := a.Files(name)
 	if err != nil {
 		return err
@@ -156,22 +186,53 @@ func (a *App) RemoveFile(name, file string) error {
 	return a.saveFiles(name, m)
 }
 
-func (a *App) Backup(name string) (map[string]bool, error) {
-	files, err := a.Files(name)
+func (a *App) Backups(name string) (arr []string, _ error) {
+	if name == "" {
+		return nil, stderr.New("empty name")
+	}
+
+	subDir := filepath.Join(root, name)
+	entries, err := os.ReadDir(subDir)
 	if err != nil {
 		return nil, err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		entryName := entry.Name()
+		if strings.HasSuffix(entryName, ".zip") {
+			arr = append(arr, entryName)
+		}
+	}
+	return arr, nil
+}
+
+func (a *App) Backup(name string) (res any, err error) {
+	return a.backup(name, false)
+}
+
+func (a *App) backup(name string, auto bool) (res any, err error) {
+	if name == "" {
+		return res, stderr.New("empty name")
+	}
+
+	files, err := a.Files(name)
+	if err != nil {
+		return res, err
 	}
 
 	realFiles := map[string]bool{}
 	for _, file := range files {
 		stat, err := os.Stat(file)
 		if err != nil {
-			return nil, err
+			if os.IsNotExist(err) {
+				continue
+			}
+			return res, err
 		}
 		if stat.IsDir() {
-			fmt.Println("dir", file)
 			err = filepath.WalkDir(file, func(path string, d fs.DirEntry, err error) error {
-				fmt.Println("dir2", path)
 				if err != nil {
 					return err
 				}
@@ -182,26 +243,108 @@ func (a *App) Backup(name string) (map[string]bool, error) {
 				return nil
 			})
 			if err != nil {
-				return nil, err
+				return res, err
 			}
 		} else {
-			fmt.Println("file", file)
 			realFiles[file] = true
 		}
 	}
-	return realFiles, nil
-	//buf := bytes.NewBuffer(nil)
-	//zw := zip.NewWriter(buf)
-	//err = zw.Close()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//for file := range realFiles {
-	//	w, err := zw.CreateHeader(&zip.FileHeader{
-	//		Name: file,
-	//	})
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
+
+	sorted := map2slice(realFiles)
+
+	hash := md5.New()
+	buf := bytes.NewBuffer(nil)
+	zw := zip.NewWriter(buf)
+	for _, file := range sorted {
+		nameInZip := filepath.ToSlash(file)
+		if len(nameInZip) == 0 {
+			return res, stderr.New("empty file name in zip")
+		}
+		if nameInZip[0] != '/' {
+			nameInZip = "/" + strings.ReplaceAll(nameInZip, ":", "")
+		}
+		w, err := zw.CreateHeader(&zip.FileHeader{
+			Name:    nameInZip,
+			Comment: file,
+			Method:  zip.Deflate,
+		})
+		if err != nil {
+			return res, err
+		}
+		b, err := os.ReadFile(file)
+		if err != nil {
+			return res, err
+		}
+		_, err = w.Write(b)
+		if err != nil {
+			return res, err
+		}
+		_, err = hash.Write(b)
+		if err != nil {
+			return res, err
+		}
+	}
+	err = zw.Close()
+	if err != nil {
+		return res, err
+	}
+
+	md5 := hex.EncodeToString(hash.Sum(nil))
+	zipFileName := fmt.Sprintf("%s_%s_%s.zip", name, time.Now().Format("20060102_150405"), md5)
+	if auto {
+		zipFileName = "auto_" + zipFileName
+	}
+	err = os.WriteFile(filepath.Join(root, name, zipFileName), buf.Bytes(), 0644)
+	return nil, err
+}
+
+func (a *App) RemoveOne(name, file string) error {
+	if name == "" {
+		return stderr.New("empty name")
+	}
+	if file == "" {
+		return stderr.New("empty filename")
+	}
+	return os.Remove(filepath.Join(root, name, file))
+}
+
+func (a *App) Restore(name, file string) error {
+	if name == "" {
+		return stderr.New("empty name")
+	}
+	if file == "" {
+		return stderr.New("empty filename")
+	}
+	if _, err := a.backup(name, true); err != nil {
+		return err
+	}
+	subPath := filepath.Join(root, name, file)
+	zr, err := zip.OpenReader(subPath)
+	if err != nil {
+		return err
+	}
+	defer zr.Close()
+	for _, f := range zr.File {
+		targetPath := f.Comment
+		if targetPath == "" {
+			return stderr.New("empty target path")
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		b, err := io.ReadAll(rc)
+		if err != nil {
+			return err
+		}
+		err = rc.Close()
+		if err != nil {
+			return err
+		}
+		err = os.WriteFile(targetPath, b, 0644)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
