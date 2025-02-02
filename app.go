@@ -290,11 +290,10 @@ func (a *App) backup(name string, auto bool) (res any, err error) {
 	}
 
 	md5 := hex.EncodeToString(hash.Sum(nil))
-	suffix := ""
+	zipFileName := fmt.Sprintf("%s_%s_%s.zip", name, time.Now().Format("20060102_150405"), md5)
 	if auto {
-		suffix = "_auto"
+		zipFileName += ".backup"
 	}
-	zipFileName := fmt.Sprintf("%s_%s_%s%s.zip", name, time.Now().Format("20060102_150405"), md5, suffix)
 	err = os.WriteFile(filepath.Join(root, name, zipFileName), buf.Bytes(), 0644)
 	return nil, err
 }

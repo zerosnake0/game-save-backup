@@ -31,7 +31,10 @@ button {
 
 button.square {
 	height: 100px;
-	width: 100px;
+	width: auto;
+    min-width: 100px;
+    text-wrap-mode: nowrap;
+    text-align:center;
 }
 
 button.small{

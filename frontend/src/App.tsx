@@ -266,17 +266,20 @@ const SingleContainer = (props: SingleContainerProps) => {
           saves.map((v, idx) => {
             return (
               <div key={idx}>
-                <button className="save"
-                  onClick={() => {
-                    Restore(ctx.Current, v)
-                      .then(() => {
-                        setRefreshSaves(!refreshSaves);
-                      })
-                      .catch((e) => {
-                        setErr2(`Restore: ${e}`);
-                      });
-                  }}
+                <button className="small"
+                 onClick={() => {
+                  Restore(ctx.Current, v)
+                    .then(() => {
+                      setRefreshSaves(!refreshSaves);
+                    })
+                    .catch((e) => {
+                      setErr2(`Restore: ${e}`);
+                    });
+                }}
                 >
+                  R
+                </button>
+                <button className="save">
                   {v}
                 </button>
                 {
