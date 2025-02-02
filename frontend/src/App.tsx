@@ -198,7 +198,6 @@ const SingleContainer = (props: SingleContainerProps) => {
               <div key={idx}>
                 {v}{" "}
                 <button
-                  className="small"
                   onClick={() => {
                     RemoveFile(ctx.Current, v)
                       .then(() => {
@@ -267,7 +266,7 @@ const SingleContainer = (props: SingleContainerProps) => {
           saves.map((v, idx) => {
             return (
               <div key={idx}>
-                <button
+                <button className="save"
                   onClick={() => {
                     Restore(ctx.Current, v)
                       .then(() => {
@@ -280,7 +279,8 @@ const SingleContainer = (props: SingleContainerProps) => {
                 >
                   {v}
                 </button>
-                <button
+                {
+                  (idx >= 10) &&                <button className="small"
                   onClick={() => {
                     RemoveOne(ctx.Current, v)
                       .then(() => {
@@ -293,6 +293,8 @@ const SingleContainer = (props: SingleContainerProps) => {
                 >
                   x
                 </button>
+                }
+
               </div>
             );
           })}

@@ -1,6 +1,8 @@
 module game-save-backup
 
-go 1.20
+go 1.21
+
+toolchain go1.21.1
 
 require github.com/wailsapp/wails/v2 v2.9.2
 

@@ -35,8 +35,13 @@ button.square {
 }
 
 button.small{
-	height: unset;
-	width: unset;
+	height: 50px;
+	width: 50px;
+}
+
+button.save {
+    height: 50px;
+    width: 600px;
 }
 
 .err {
