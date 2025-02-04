@@ -89,14 +89,18 @@ func (a *App) Remove(name string) error {
 	return os.RemoveAll(subDir)
 }
 
-func (a *App) Open(name string) error {
-	// name可以空
-	subDir := filepath.Join(root, name)
+func (a *App) OpenPath(path string) error {
 	cmd := "open"
 	if runtime.GOOS == "windows" {
 		cmd = "explorer"
 	}
-	return exec.Command(cmd, subDir).Start()
+	return exec.Command(cmd, path).Start()
+}
+
+func (a *App) Open(name string) error {
+	// name可以空
+	subDir := filepath.Join(root, name)
+	return a.OpenPath(subDir)
 }
 
 func (a *App) Files(name string) ([]string, error) {

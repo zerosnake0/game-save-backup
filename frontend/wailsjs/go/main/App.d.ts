@@ -19,6 +19,8 @@ export function List():Promise<Array<string>>;
 
 export function Open(arg1:string):Promise<void>;
 
+export function OpenPath(arg1:string):Promise<void>;
+
 export function Remove(arg1:string):Promise<void>;
 
 export function RemoveFile(arg1:string,arg2:string):Promise<void>;

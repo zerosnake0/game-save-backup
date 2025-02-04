@@ -10,6 +10,7 @@ import {
   Files,
   List,
   Open,
+  OpenPath,
   Remove,
   RemoveFile,
   RemoveOne,
@@ -197,6 +198,13 @@ const SingleContainer = (props: SingleContainerProps) => {
             return (
               <div key={idx}>
                 {v}{" "}
+                <button onClick={()=>{
+                  OpenPath(v).catch((e) => {
+                    setErr2(`Open ${v}: ${e}`);
+                  });
+                }}>
+                  Open
+                </button>
                 <button
                   onClick={() => {
                     RemoveFile(ctx.Current, v)

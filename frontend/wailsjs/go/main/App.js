@@ -38,6 +38,10 @@ export function Open(arg1) {
   return window['go']['main']['App']['Open'](arg1);
 }
 
+export function OpenPath(arg1) {
+  return window['go']['main']['App']['OpenPath'](arg1);
+}
+
 export function Remove(arg1) {
   return window['go']['main']['App']['Remove'](arg1);
 }
