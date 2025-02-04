@@ -190,6 +190,29 @@ func (a *App) RemoveFile(name, file string) error {
 	return a.saveFiles(name, m)
 }
 
+func (a *App) Rename(name, file, newFile string) error {
+	if name == "" {
+		return stderr.New("empty name")
+	}
+	if file == "" {
+		return stderr.New("empty filename")
+	}
+	if newFile == "" {
+		return stderr.New("empty new filename")
+	}
+	if file == newFile {
+		return stderr.New("no need to rename")
+	}
+	if !strings.HasSuffix(newFile, ".zip") {
+		newFile += ".zip"
+	}
+
+	subDir := filepath.Join(root, name)
+	oldPath := filepath.Join(subDir, file)
+	newPath := filepath.Join(subDir, newFile)
+	return os.Rename(oldPath, newPath)
+}
+
 func (a *App) Backups(name string) (arr []string, _ error) {
 	if name == "" {
 		return nil, stderr.New("empty name")
@@ -200,14 +223,29 @@ func (a *App) Backups(name string) (arr []string, _ error) {
 	if err != nil {
 		return nil, err
 	}
+	var files []os.FileInfo
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
 		entryName := entry.Name()
-		if strings.HasSuffix(entryName, ".zip") {
-			arr = append(arr, entryName)
+		if !strings.HasSuffix(entryName, ".zip") {
+			continue
 		}
+		info, err := entry.Info()
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, info)
+	}
+	sort.Slice(files, func(i, j int) bool {
+		left := files[i]
+		right := files[j]
+		return left.ModTime().After(right.ModTime())
+	})
+	for _, file := range files {
+		fmt.Println(file.Name(), file.ModTime().Format(time.RFC3339))
+		arr = append(arr, file.Name())
 	}
 	return arr, nil
 }

@@ -54,6 +54,10 @@ export function RemoveOne(arg1, arg2) {
   return window['go']['main']['App']['RemoveOne'](arg1, arg2);
 }
 
+export function Rename(arg1, arg2, arg3) {
+  return window['go']['main']['App']['Rename'](arg1, arg2, arg3);
+}
+
 export function Restore(arg1, arg2) {
   return window['go']['main']['App']['Restore'](arg1, arg2);
 }

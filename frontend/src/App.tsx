@@ -14,6 +14,7 @@ import {
   Remove,
   RemoveFile,
   RemoveOne,
+  Rename,
   Restore,
   Root,
 } from "../wailsjs/go/main/App";
@@ -70,6 +71,13 @@ const ListContainer = (props: ListContainerProps) => {
         >
           Open
         </button>
+        <button
+          onClick={() => {
+            setRefresh(!refresh);
+          }}
+        >
+          Refresh
+        </button>
         <div className="err">{err}</div>
       </div>
       <div>
@@ -124,9 +132,6 @@ const SingleContainer = (props: SingleContainerProps) => {
   useEffect(() => {
     Backups(ctx.Current)
       .then((val) => {
-        if (val) {
-          val = val.reverse();
-        }
         setSaves(val);
       })
       .catch((e) => {
@@ -198,7 +203,7 @@ const SingleContainer = (props: SingleContainerProps) => {
             return (
               <div key={idx}>
                 {v}{" "}
-                <button onClick={()=>{
+                <button onClick={() => {
                   OpenPath(v).catch((e) => {
                     setErr2(`Open ${v}: ${e}`);
                   });
@@ -270,49 +275,105 @@ const SingleContainer = (props: SingleContainerProps) => {
         >
           Backup
         </button>
+        <button onClick={() => { setRefreshSaves(!refreshSaves) }}>
+          Refresh
+        </button>
         {saves &&
           saves.map((v, idx) => {
-            return (
-              <div key={idx}>
-                <button className="small"
-                 onClick={() => {
-                  Restore(ctx.Current, v)
-                    .then(() => {
-                      setRefreshSaves(!refreshSaves);
-                    })
-                    .catch((e) => {
-                      setErr2(`Restore: ${e}`);
-                    });
-                }}
-                >
-                  R
-                </button>
-                <button className="save">
-                  {v}
-                </button>
-                {
-                  (idx >= 10) &&                <button className="small"
-                  onClick={() => {
-                    RemoveOne(ctx.Current, v)
-                      .then(() => {
-                        setRefreshSaves(!refreshSaves);
-                      })
-                      .catch((e) => {
-                        setErr2(`RemoveOne: ${e}`);
-                      });
-                  }}
-                >
-                  x
-                </button>
-                }
-
-              </div>
-            );
+            return <SingleSave key={idx}
+              name={ctx.Current}
+              file={v}
+              refreshFunc={() => { setRefreshSaves(!refreshSaves); }}
+              errFunc={setErr2}
+              canDelete={idx >= 10}
+            />
           })}
       </div>
     </div>
   );
 };
+
+interface SingleSaveProps {
+  name: string;
+  file: string;
+  refreshFunc: () => void;
+  errFunc: (e: any) => void;
+  canDelete: boolean;
+}
+
+const SingleSave = (props: SingleSaveProps) => {
+  const { name, file, refreshFunc, errFunc, canDelete } = { ...props }
+  const [newName, setNewName] = useState(file)
+
+  useEffect(() => {
+    // console.log(`name changed to ${file}`)
+    setNewName(file)
+  }, [file])
+
+  return <div >
+    {
+      (newName == file) && <button className="small"
+        onClick={() => {
+          Restore(name, file)
+            .then(() => {
+              refreshFunc()
+            })
+            .catch((e) => {
+              errFunc(`Restore: ${e}`);
+            });
+        }}
+      >
+        R
+      </button>
+    }
+    <input className="save" value={newName} defaultValue={file}
+      onChange={(e) => {
+        setNewName(e.target.value)
+      }}
+    />
+    {
+      (newName != file) &&
+      <React.Fragment>
+        <button className="small"
+          onClick={() => {
+            Rename(name, file, newName).then(() => {
+              refreshFunc()
+            }).catch((e) => {
+              errFunc(`Rename: ${e}`)
+            })
+          }}
+        >
+          Rename
+        </button>
+        <button className="small"
+          onClick={() => {
+            setNewName(file)
+          }}
+        >
+          Cancel
+        </button>
+      </React.Fragment>
+    }
+
+    {
+      (canDelete) && (newName == file) && <button className="small"
+        onClick={() => {
+          RemoveOne(name, file)
+            .then(() => {
+              refreshFunc()
+            })
+            .catch((e) => {
+              errFunc(`RemoveOne: ${e}`);
+            });
+        }}
+      >
+        x
+      </button>
+    }
+
+  </div>
+}
+
 
 function App() {
   const [root, setRoot] = useState("<unknown>");

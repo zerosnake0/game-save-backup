@@ -27,6 +27,8 @@ export function RemoveFile(arg1:string,arg2:string):Promise<void>;
 
 export function RemoveOne(arg1:string,arg2:string):Promise<void>;
 
+export function Rename(arg1:string,arg2:string,arg3:string):Promise<void>;
+
 export function Restore(arg1:string,arg2:string):Promise<void>;
 
 export function Root():Promise<string>;

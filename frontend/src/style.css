@@ -39,10 +39,10 @@ button.square {
 
 button.small{
 	height: 50px;
-	width: 50px;
+	min-width: 50px;
 }
 
-button.save {
+.save {
     height: 50px;
     width: 600px;
 }
