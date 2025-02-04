@@ -210,13 +210,16 @@ func (a *App) Rename(name, file, newFile string) error {
 	subDir := filepath.Join(root, name)
 	oldPath := filepath.Join(subDir, file)
 	newPath := filepath.Join(subDir, newFile)
-	_, err := os.Stat(newPath)
-	if err != nil {
-		if !os.IsNotExist(err) {
+	for {
+		_, err := os.Stat(newPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				break
+			}
 			return err
 		}
-	} else {
-		return stderr.New("target file already exists")
+		// file already exists, add timestamp suffix
+		newPath = filepath.Join(subDir, strings.TrimSuffix(newFile, ".zip")+time.Now().Format("_20060102_150405.zip"))
 	}
 	return os.Rename(oldPath, newPath)
 }
