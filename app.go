@@ -320,7 +320,27 @@ func (a *App) backup(name string, auto bool) (res any, err error) {
 		zipFileName += ".backup"
 	}
 	err = os.WriteFile(filepath.Join(root, name, zipFileName), buf.Bytes(), 0644)
-	return nil, err
+	if err != nil {
+		return res, err
+	}
+
+	if !auto {
+		return res, nil
+	}
+
+	// remove all files when backup is saved
+	var errs []error
+	for _, path := range sorted {
+		err := os.Remove(path)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return res, stderr.Join(errs...)
+	}
+
+	return res, nil
 }
 
 func (a *App) RemoveOne(name, file string) error {
