@@ -210,6 +210,14 @@ func (a *App) Rename(name, file, newFile string) error {
 	subDir := filepath.Join(root, name)
 	oldPath := filepath.Join(subDir, file)
 	newPath := filepath.Join(subDir, newFile)
+	_, err := os.Stat(newPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+	} else {
+		return stderr.New("target file already exists")
+	}
 	return os.Rename(oldPath, newPath)
 }
 
@@ -244,7 +252,6 @@ func (a *App) Backups(name string) (arr []string, _ error) {
 		return left.ModTime().After(right.ModTime())
 	})
 	for _, file := range files {
-		fmt.Println(file.Name(), file.ModTime().Format(time.RFC3339))
 		arr = append(arr, file.Name())
 	}
 	return arr, nil
